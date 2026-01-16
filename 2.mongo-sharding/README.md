@@ -29,6 +29,7 @@
   ``` sh.addShard( "shard-1/shard-1:27018"); sh.addShard( "shard-2/shard-2:27019"); ```
   
   5. Создание БД и документа:
+  ``` docker exec -it mongos-router mongosh --port 27020 ```
   ``` sh.enableSharding("somedb");  ```
   ``` sh.shardCollection("somedb.helloDoc", { "name" : "hashed" } ); ```
   заполнение тестовыми данными:
