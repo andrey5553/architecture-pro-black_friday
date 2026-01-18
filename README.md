@@ -39,7 +39,19 @@
 [Репликация описана в readme проекта 3.mongo-sharding-repl.](/3.mongo-sharing-repl/README.md)
 В файле представлены детальные инструкции по развертыванию сервисов.
 
+## Задание 4. Кеширование
 
+[Кеширование описано в readme проекта 4.mongo-sharding-repl-cache.](/4.sharding-repl-cache/)
+В файле представлены детальные инструкции по развертыванию сервисов.
 
+## Задание 5. Схема сервисов с учетом api gateway и service discovery
+
+[Схема проекта](/schemas/Task5/schema5_api_gateway_with_service_discovery.drawio)
+[Схема проекта на картинке](/schemas/Task5/images/schema5_api_gateway_with_service_discovery.png)
+
+## Задание 6. Схема сервисов с учетом CDN
+
+[Схема проекта](/schemas/Task6/schema6_cdn.drawio)
+[Схема проекта на картинке](/schemas/Task6/images/schema6_cdn.png)
 
 
