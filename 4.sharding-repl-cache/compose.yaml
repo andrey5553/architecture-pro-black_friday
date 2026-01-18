@@ -1,6 +1,24 @@
-name: mongo-sharding-repl
+name: mongo-sharding-repl-cache
 
 services:
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: Dockerfile
+    ports:
+      - 8082:8080
+    environment:
+      MONGODB_URL: "mongodb://mongos-router:27020"
+      MONGODB_DATABASE_NAME: "somedb"
+      REDIS_URL: "redis://redis:6379"
+    networks:
+      - app-network
+    depends_on:
+      redis:
+        condition: service_healthy  # Ждем, пока Redis станет здоровым
+    restart: on-failure  # Перезапускаем если не смог подключиться к Redis
+  
   config-srv:
     image: mongo:7.0
     container_name: config-srv
@@ -27,18 +45,22 @@ services:
       retries: 5
       start_period: 40s
 
-  pymongo_api:
-    container_name: pymongo_api
-    build:
-      context: api_app
-      dockerfile: Dockerfile
+  redis:
+    image: redis:latest
+    restart: always
+    container_name: redis
     ports:
-      - 8082:8080
+      - "6379:6379"
     environment:
-      MONGODB_URL: "mongodb://mongos-router:27020"
-      MONGODB_DATABASE_NAME: "somedb"
+      - REDIS_PORT=6379
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
   mongos-router:
     image: mongo:7.0
