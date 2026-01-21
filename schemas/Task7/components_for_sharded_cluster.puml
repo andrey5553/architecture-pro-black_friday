@@ -1,0 +1,150 @@
+@startuml Схемы коллекций для шардирования данных и типы операций к ним
+left to right direction
+
+package "База данных: mobile_world" {
+    entity "products" {
+        + product_id: ObjectId (PK)
+        --
+        name: String (INDEX: text)
+        category: String (INDEX: category_1_price_-1)
+        price: Decimal128
+        attributes: EmbeddedDocument
+        --
+        stock: Array<EmbeddedDocument>
+    }
+
+    entity "orders" {
+        + order_id: ObjectId (PK)
+        --
+        user_id: ObjectId (INDEX: user_id_1_createdAt_-1)
+        created_at: Date (INDEX)
+        status: String (INDEX)
+        total_amount: Decimal128
+        geo_zone: String
+        --
+        items: Array<EmbeddedDocument>
+    }
+
+    entity "carts" {
+        + cart_id: ObjectId (PK)
+        --
+        session_id: String (INDEX: sparse, partial)
+        user_id: ObjectId (INDEX: sparse, partial)
+        status: String (INDEX)
+        created_at: Date
+        updated_at: Date (INDEX)
+        expires_at: Date (INDEX: TTL)
+        --
+        items: Array<EmbeddedDocument>
+    }
+}
+
+' Связи между коллекциями
+products ||..o{ carts : "входит в"
+products ||..o{ orders : "входит в"
+carts ||--o| orders : "переходит в"
+
+' Нотация для вложенных документов
+entity "ProductStock" as PS {
+    geo_zone: String (INDEX: compound)
+    quantity: Integer
+}
+
+entity "OrderItem" as OI {
+    product_id: ObjectId (FK)
+    quantity: Integer
+    price_at_time: Decimal128
+}
+
+entity "CartItem" as CI {
+    product_id: ObjectId (FK)
+    quantity: Integer
+    added_at: Date
+}
+
+' Встраивание документов
+products .. PS
+orders .. OI
+carts .. CI
+
+' БЛОКИ ОПЕРАЦИЙ
+package "ОПЕРАЦИИ: orders" as OPS_ORDERS {
+    note as N_O1
+        **Основные операции:**
+
+        1. **Создание заказа**
+           • Транзакция: создание order + обновление stock.quantity
+           • Валидация остатков по geo_zone
+           • Расчет total_amount
+
+        2. **История заказов**
+           • db.orders.find({user_id: X})
+             .sort({created_at: -1})
+           • Пагинация + агрегация для статистики
+
+        3. **Отслеживание статуса**
+           • db.orders.find({order_id: X}, {status: 1})
+           • Обновление статуса при событиях
+    end note
+}
+
+package "ОПЕРАЦИИ: products" as OPS_PRODUCTS {
+    note as N_P1
+        **Основные операции:**
+
+        1. **Обновление остатков**
+           • db.products.updateOne(
+               {_id: pid, "stock.geo_zone": zone},
+               {$inc: {"stock.$.quantity": -N}}
+             )
+
+        2. **Поиск по категориям/цене**
+           • db.products.find({
+               category: "phones",
+               price: {$gte: 100, $lte: 500}
+             }).sort({price: -1})
+
+        3. **Получение описания товара**
+           • db.products.findOne(
+               {_id: pid},
+               {name: 1, price: 1, attributes: 1}
+             )
+    end note
+}
+
+package "ОПЕРАЦИИ: carts" as OPS_CARTS {
+    note as N_C1
+        **Основные операции:**
+
+        1. **Создание корзины**
+           • Для гостя: {session_id: X, status:"active"}
+           • Для пользователя: {user_id: X, status:"active"}
+
+        2. **Получение текущей корзины**
+           • db.carts.findOne({
+               $or: [
+                 {session_id: sid, status:"active"},
+                 {user_id: uid, status:"active"}
+               ]
+             })
+
+        3. **Добавление/замена товара**
+           • upsert с $addToSet/$set для items
+
+        4. **Слияние корзин**
+           • Найти гостевую: {session_id: X, status:"active"}
+           • Найти пользовательскую: {user_id: Y, status:"active"}
+           • Объединить items, обновить updated_at
+           • Пометка гостевой как "abandoned"
+
+        5. **Оформление заказа**
+           • Изменение status: "active" → "ordered"
+    end note
+}
+
+' Расположение блоков операций
+OPS_ORDERS .. orders
+OPS_PRODUCTS .. products
+OPS_CARTS .. carts
+
+@enduml
