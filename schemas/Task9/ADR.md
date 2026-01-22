@@ -1,8 +1,8 @@
-### <a name=#task-title-configuring-read-replicas-and-data-consistency></a>**Название задачи:**
+### <a name="task-title-configuring-read-replicas-and-data-consistency"></a>**Название задачи:**
 Настройка чтения с реплик и консистентность данных
-### <a name=#author-mobile-world-architecture-team></a>**Имя исполнителя:**
+### <a name="adr-09-author-mobile-world-architecture-team"></a>**Имя исполнителя:**
 Михайленко А.Н.
-### <a name=#date></a>**Дата:**
+### <a name="adr-09-date"></a>**Дата:**
 21.01.2026
 #### Контекст и описание проблемы
 После внедрения шардирования и репликации MongoDB для онлайн-магазина "Мобильный мир" 
@@ -11,7 +11,7 @@
 записи и secondary узлами для чтения. Требуется определить, 
 какие операции могут безопасно читать данные с secondary реплик без риска для бизнес-логики.
 
-### <a name=#decision></a>**Решение**
+### <a name="adr-09-proposed-solution"></a>**Решение**
 
 #### Таблица распределения операций чтения
 | Коллекция | Операция чтения                               | Primary/Secondary | Допустимая задержка репликации | Обоснование              |
